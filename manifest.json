@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Sql Viewer",
+  "version": "2.0.0",
+  "description": "View CloudWatch logs for API requests with configurable settings",
+  "permissions": [
+    "webRequest",
+    "webNavigation",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "css": ["src/sidebar.css"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "public/popup.html",
+    "default_icon": {
+      "16": "public/icon-16.png",
+      "48": "public/icon-48.png",
+      "128": "public/icon-128.png"
+    }
+  },
+  "options_page": "public/settings.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["src/sidebar.html", "src/sidebar.css", "src/settings.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "commands": {
+    "toggle-sidebar": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+L",
+        "mac": "Command+Shift+L"
+      },
+      "description": "Toggle CloudWatch logs sidebar"
+    }
+  }
+}

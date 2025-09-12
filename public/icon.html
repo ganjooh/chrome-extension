@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Icons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .icon-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background: white;
+        }
+        .instructions {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>Extension Icons Generator</h2>
+        <p>Right-click each canvas and save as:</p>
+        <ul>
+            <li>icon-16.png (16x16)</li>
+            <li>icon-48.png (48x48)</li>
+            <li>icon-128.png (128x128)</li>
+        </ul>
+    </div>
+    
+    <div class="icon-container">
+        <canvas id="icon16" width="16" height="16"></canvas>
+        <canvas id="icon48" width="48" height="48"></canvas>
+        <canvas id="icon128" width="128" height="128"></canvas>
+    </div>
+
+    <script>
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Background
+            ctx.fillStyle = '#007acc';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Text
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('CW', size / 2, size / 2);
+        }
+        
+        drawIcon('icon16', 16);
+        drawIcon('icon48', 48);
+        drawIcon('icon128', 128);
+    </script>
+</body>
+</html>

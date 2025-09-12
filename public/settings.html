@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sql Viewer Settings</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      margin: 0;
+      padding: 20px;
+      min-width: 600px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #cccccc;
+      margin-bottom: 8px;
+    }
+    
+    .subtitle {
+      color: #808080;
+      margin-bottom: 32px;
+    }
+    
+    .section {
+      background: #252526;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .section h2 {
+      color: #cccccc;
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #3e3e42;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      color: #cccccc;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    input[type="url"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      background: #3c3c3c;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #d4d4d4;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #007acc;
+      background: #2d2d30;
+    }
+    
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    
+    .help-text {
+      color: #808080;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+    
+    .checkbox-group label {
+      margin-bottom: 0;
+      cursor: pointer;
+      flex: 1;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 32px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .btn-primary {
+      background: #007acc;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #005a9e;
+    }
+    
+    .btn-secondary {
+      background: #3c3c3c;
+      color: #d4d4d4;
+    }
+    
+    .btn-secondary:hover {
+      background: #4e4e4e;
+    }
+    
+    .btn-danger {
+      background: #d13438;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #a80000;
+    }
+    
+    .status-message {
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    .status-message.success {
+      background: #1e4620;
+      color: #4ec9b0;
+      border-left: 3px solid #4ec9b0;
+      display: block;
+    }
+    
+    .status-message.error {
+      background: #5a1d1d;
+      color: #f48771;
+      border-left: 3px solid #f48771;
+      display: block;
+    }
+    
+    .add-button {
+      background: #007acc;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    
+    .add-button:hover {
+      background: #005a9e;
+    }
+    
+    .removable-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .removable-item input {
+      flex: 1;
+      margin-right: 8px;
+    }
+    
+    .remove-button {
+      background: #d13438;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .remove-button:hover {
+      background: #a80000;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #3e3e42;
+    }
+    
+    .tab-button {
+      padding: 10px 20px;
+      background: transparent;
+      color: #808080;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .tab-button.active {
+      color: #cccccc;
+      border-bottom-color: #007acc;
+    }
+    
+    .tab-button:hover {
+      color: #cccccc;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sql Viewer Settings</h1>
+    <p class="subtitle">Configure your CloudWatch logs viewer extension</p>
+    
+    <div id="status-message" class="status-message"></div>
+    
+    <div class="tab-buttons">
+      <button class="tab-button active" data-tab="general">General</button>
+      <button class="tab-button" data-tab="aws">AWS Configuration</button>
+      <button class="tab-button" data-tab="domains">Monitored Domains</button>
+      <button class="tab-button" data-tab="advanced">Advanced</button>
+    </div>
+    
+    <div id="general-tab" class="tab-content active">
+      <div class="section">
+        <h2>Server Configuration</h2>
+        
+        <div class="form-group">
+          <label for="server-url">Local Server URL</label>
+          <input type="url" id="server-url" placeholder="http://localhost:8090">
+          <div class="help-text">URL of your local CloudWatch logs server</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="server-port">Server Port</label>
+          <input type="number" id="server-port" placeholder="8090" min="1" max="65535">
+          <div class="help-text">Port number for the local server</div>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="auto-fetch">
+          <label for="auto-fetch">Automatically fetch logs for new requests</label>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="show-sql-logs">
+          <label for="show-sql-logs">Show SQL queries in logs</label>
+        </div>
+      </div>
+    </div>
+    
+    <div id="aws-tab" class="tab-content">
+      <div class="section">
+        <h2>AWS Settings</h2>
+        
+        <div class="form-group">
+          <label for="aws-profile">AWS Profile</label>
+          <input type="text" id="aws-profile" placeholder="sf">
+          <div class="help-text">AWS CLI profile to use for CloudWatch access</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="aws-region">AWS Region</label>
+          <select id="aws-region">
+            <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
+            <option value="us-east-2">US East (Ohio) - us-east-2</option>
+            <option value="us-west-1">US West (N. California) - us-west-1</option>
+            <option value="us-west-2">US West (Oregon) - us-west-2</option>
+            <option value="eu-west-1">EU (Ireland) - eu-west-1</option>
+            <option value="eu-central-1">EU (Frankfurt) - eu-central-1</option>
+            <option value="ap-southeast-1">Asia Pacific (Singapore) - ap-southeast-1</option>
+            <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
+          </select>
+          <div class="help-text">AWS region where your CloudWatch logs are stored</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="log-groups">Log Groups</label>
+          <div id="log-groups-container">
+            <div class="removable-item">
+              <input type="text" class="log-group-input" placeholder="/aws/elasticbeanstalk/app-name/var/log/...">
+            </div>
+          </div>
+          <button class="add-button" id="add-log-group">+ Add Log Group</button>
+          <div class="help-text">CloudWatch log groups to search for logs. The extension will search these in order.</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="time-range">Default Time Range (hours)</label>
+          <input type="number" id="time-range" placeholder="12" min="1" max="168">
+          <div class="help-text">How many hours back to search for logs (default: 12)</div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="domains-tab" class="tab-content">
+      <div class="section">
+        <h2>Monitored Domains</h2>
+        
+        <div class="form-group">
+          <label>Production Domains</label>
+          <div id="prod-domains-container">
+            <div class="removable-item">
+              <input type="text" class="domain-input" placeholder="https://api.example.com">
+            </div>
+          </div>
+          <button class="add-button" id="add-prod-domain">+ Add Production Domain</button>
+          <div class="help-text">Production API endpoints to monitor</div>
+        </div>
+        
+        <div class="form-group">
+          <label>Staging Domains</label>
+          <div id="stage-domains-container">
+            <div class="removable-item">
+              <input type="text" class="domain-input" placeholder="https://api-stage.example.com">
+            </div>
+          </div>
+          <button class="add-button" id="add-stage-domain">+ Add Staging Domain</button>
+          <div class="help-text">Staging API endpoints to monitor</div>
+        </div>
+        
+        <div class="form-group">
+          <label>Local Development Domains</label>
+          <div id="local-domains-container">
+            <div class="removable-item">
+              <input type="text" class="domain-input" placeholder="http://localhost:3001">
+            </div>
+          </div>
+          <button class="add-button" id="add-local-domain">+ Add Local Domain</button>
+          <div class="help-text">Local development URLs to monitor</div>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="monitor-all-localhost">
+          <label for="monitor-all-localhost">Monitor all localhost traffic</label>
+        </div>
+      </div>
+    </div>
+    
+    <div id="advanced-tab" class="tab-content">
+      <div class="section">
+        <h2>Advanced Settings</h2>
+        
+        <div class="form-group">
+          <label for="request-header">Request ID Header Name</label>
+          <input type="text" id="request-header" placeholder="X-Request-Id">
+          <div class="help-text">HTTP header that contains the request ID</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="backoff-delays">Retry Backoff Delays (ms)</label>
+          <input type="text" id="backoff-delays" placeholder="2000, 5000, 10000, 20000, 30000">
+          <div class="help-text">Comma-separated list of delays in milliseconds for retry attempts</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="sql-exclude-tables">SQL Tables to Exclude</label>
+          <textarea id="sql-exclude-tables" placeholder="ahoy_visits&#10;flipper_features&#10;jwt_deny_list"></textarea>
+          <div class="help-text">Tables to exclude from SQL logs (one per line)</div>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="enable-debug">
+          <label for="enable-debug">Enable debug logging in console</label>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="enable-websocket">
+          <label for="enable-websocket">Enable WebSocket for real-time updates</label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn-secondary" id="reset-defaults">Reset to Defaults</button>
+      <button class="btn-secondary" id="export-settings">Export Settings</button>
+      <button class="btn-secondary" id="import-settings">Import Settings</button>
+      <input type="file" id="import-file" style="display: none;" accept=".json">
+      <button class="btn-primary" id="save-settings">Save Settings</button>
+    </div>
+  </div>
+  
+  <script src="settings.js"></script>
+</body>
+</html>

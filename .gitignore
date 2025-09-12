@@ -1,0 +1,37 @@
+# Development documentation (not needed for extension functionality)
+CLAUDE.md
+AGENTS.md
+
+# Node modules (if any local development dependencies)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.zip
+*.crx
+*.pem
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+.temp/
+
+# Local development files
+.local/
