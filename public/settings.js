@@ -1,274 +1,317 @@
-// Default settings
-const DEFAULT_SETTINGS = {
-  serverUrl: 'http://13.203.150.222:8090',
-  serverPort: 8090,
-  autoFetch: false,
-  showSqlLogs: true,
-  awsProfile: 'sf',
-  awsRegion: 'us-east-1',
-  logGroups: [
-    '/aws/elasticbeanstalk/ad-portal-prod-env/var/log/eb-docker/containers/eb-current-app/stdouterr.log'
-  ],
-  timeRange: 12,
-  prodDomains: [
-    'https://api.portal.insurance.io',
-    'https://api.ad-portal.smartfinancial.com'
-  ],
-  stageDomains: [
-    'https://api-stage.ad-portal.smartfinancial.com'
-  ],
-  localDomains: [
-    'http://localhost:3000',
-    'http://admin.localhost:3000',
-    'http://www.localhost:3000',
-    'http://localhost:3001',
-    'http://admin.localhost:3001',
-    'http://www.localhost:3001'
-  ],
-  monitorAllLocalhost: true,
-  requestHeader: 'X-Request-Id',
-  backoffDelays: '2000, 5000, 10000, 20000, 30000, 45000, 60000, 90000, 120000, 180000',
-  sqlExcludeTables: 'ahoy_visits\nflipper_features\njwt_deny_list',
-  enableDebug: false,
-  enableWebsocket: true
-};
+// Settings management module for the extension
+const SettingsManager = (() => {
+  // Default settings
+  const DEFAULT_SETTINGS = {
+    serverUrl: 'http://13.203.150.222:8090',
+    serverPort: 8090,
+    autoFetch: true,
+    showSqlLogs: true,
+    awsProfile: 'sf',
+    awsRegion: 'us-east-1',
+    logGroups: [
+      '/aws/elasticbeanstalk/ad-portal-prod-env/var/log/eb-docker/containers/eb-current-app/stdouterr.log'
+    ],
+    timeRange: 12,
+    prodDomains: [
+      'https://api.portal.insurance.io',
+      'https://api.ad-portal.smartfinancial.com'
+    ],
+    stageDomains: [
+      'https://api-stage.ad-portal.smartfinancial.com'
+    ],
+    localDomains: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://admin.localhost:3000',
+      'http://admin.localhost:3001',
+      'http://www.localhost:3001'
+    ],
+    monitorAllLocalhost: true,
+    requestHeader: 'X-Request-Id',
+    backoffDelays: '2000, 5000, 10000, 15000, 20000, 30000, 45000, 60000, 90000, 120000',
+    sqlExcludeTables: 'ahoy_visits\nflipper_features\njwt_deny_list',
+    enableDebug: false,
+    enableWebsocket: true
+  };
 
-// Load settings from storage
-async function loadSettings() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
-      resolve(result);
+  let cachedSettings = null;
+  let settingsListeners = [];
+
+  // Load settings from storage
+  async function loadSettings() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
+        cachedSettings = result;
+        resolve(result);
+      });
     });
-  });
-}
+  }
 
-// Save settings to storage
-async function saveSettings(settings) {
-  return new Promise((resolve) => {
-    chrome.storage.sync.set(settings, () => {
-      resolve();
+  // Save settings to storage
+  async function saveSettings(settings) {
+    return new Promise((resolve) => {
+      chrome.storage.sync.set(settings, () => {
+        cachedSettings = settings;
+        notifyListeners(settings);
+        resolve();
+      });
     });
-  });
-}
+  }
 
-// Show status message
-function showStatus(message, type = 'success') {
-  const statusEl = document.getElementById('status-message');
-  statusEl.textContent = message;
-  statusEl.className = `status-message ${type}`;
-  setTimeout(() => {
-    statusEl.className = 'status-message';
-  }, 3000);
-}
-
-// Tab switching
-document.querySelectorAll('.tab-button').forEach(button => {
-  button.addEventListener('click', () => {
-    const tabName = button.dataset.tab;
-    
-    // Update buttons
-    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-    button.classList.add('active');
-    
-    // Update content
-    document.querySelectorAll('.tab-content').forEach(content => {
-      content.classList.remove('active');
-    });
-    document.getElementById(`${tabName}-tab`).classList.add('active');
-  });
-});
-
-// Dynamic list management
-function addItemToList(containerId, inputClass, value = '') {
-  const container = document.getElementById(containerId);
-  const item = document.createElement('div');
-  item.className = 'removable-item';
-  item.innerHTML = `
-    <input type="text" class="${inputClass}" value="${value}" placeholder="${container.querySelector('input').placeholder}">
-    <button class="remove-button">Remove</button>
-  `;
-  
-  item.querySelector('.remove-button').addEventListener('click', () => {
-    if (container.children.length > 1) {
-      item.remove();
+  // Get cached settings or load if not cached
+  async function getSettings() {
+    if (cachedSettings) {
+      return cachedSettings;
     }
-  });
-  
-  container.appendChild(item);
-}
+    return await loadSettings();
+  }
 
-// Add log group
-document.getElementById('add-log-group').addEventListener('click', () => {
-  addItemToList('log-groups-container', 'log-group-input');
-});
+  // Get a specific setting
+  async function getSetting(key) {
+    const settings = await getSettings();
+    return settings[key];
+  }
 
-// Add domain buttons
-document.getElementById('add-prod-domain').addEventListener('click', () => {
-  addItemToList('prod-domains-container', 'domain-input');
-});
+  // Update a specific setting
+  async function updateSetting(key, value) {
+    const settings = await getSettings();
+    settings[key] = value;
+    await saveSettings(settings);
+  }
 
-document.getElementById('add-stage-domain').addEventListener('click', () => {
-  addItemToList('stage-domains-container', 'domain-input');
-});
+  // Add listener for settings changes
+  function addListener(callback) {
+    settingsListeners.push(callback);
+  }
 
-document.getElementById('add-local-domain').addEventListener('click', () => {
-  addItemToList('local-domains-container', 'domain-input');
-});
+  // Remove listener
+  function removeListener(callback) {
+    settingsListeners = settingsListeners.filter(l => l !== callback);
+  }
 
-// Load settings into form
-async function populateForm() {
-  const settings = await loadSettings();
-  
-  // General tab
-  document.getElementById('server-url').value = settings.serverUrl;
-  document.getElementById('server-port').value = settings.serverPort;
-  document.getElementById('auto-fetch').checked = settings.autoFetch;
-  document.getElementById('show-sql-logs').checked = settings.showSqlLogs;
-  
-  // AWS tab
-  document.getElementById('aws-profile').value = settings.awsProfile;
-  document.getElementById('aws-region').value = settings.awsRegion;
-  document.getElementById('time-range').value = settings.timeRange;
-  
-  // Log groups
-  const logGroupsContainer = document.getElementById('log-groups-container');
-  logGroupsContainer.innerHTML = '';
-  settings.logGroups.forEach((group, index) => {
-    if (index === 0) {
-      logGroupsContainer.innerHTML = `
-        <div class="removable-item">
-          <input type="text" class="log-group-input" value="${group}" placeholder="/aws/elasticbeanstalk/app-name/var/log/...">
-        </div>
-      `;
-    } else {
-      addItemToList('log-groups-container', 'log-group-input', group);
+  // Notify all listeners of settings change
+  function notifyListeners(settings) {
+    settingsListeners.forEach(listener => {
+      try {
+        listener(settings);
+      } catch (e) {
+        console.error('Error in settings listener:', e);
+      }
+    });
+  }
+
+  // Parse backoff delays from string to array
+  function getBackoffDelays(settings) {
+    const delaysStr = settings.backoffDelays || DEFAULT_SETTINGS.backoffDelays;
+    return delaysStr.split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d));
+  }
+
+  // Parse SQL exclude tables from string to array
+  function getSqlExcludeTables(settings) {
+    const tablesStr = settings.sqlExcludeTables || DEFAULT_SETTINGS.sqlExcludeTables;
+    return tablesStr.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+  }
+
+  // Get server URLs based on settings
+  function getServerUrls(settings) {
+    const urls = [];
+    if (settings.serverUrl) {
+      urls.push(settings.serverUrl);
     }
-  });
-  
-  // Domains tab
-  const populateDomains = (containerId, domains) => {
-    const container = document.getElementById(containerId);
-    container.innerHTML = '';
-    if (domains.length === 0) {
-      container.innerHTML = `
-        <div class="removable-item">
-          <input type="text" class="domain-input" value="" placeholder="${container.querySelector('input')?.placeholder || 'https://example.com'}">
-        </div>
-      `;
-    } else {
-      domains.forEach((domain, index) => {
-        if (index === 0) {
-          container.innerHTML = `
-            <div class="removable-item">
-              <input type="text" class="domain-input" value="${domain}" placeholder="https://example.com">
-            </div>
-          `;
-        } else {
-          addItemToList(containerId, 'domain-input', domain);
+    // Add fallback URLs
+    urls.push(`http://localhost:${settings.serverPort}`);
+    urls.push(`http://127.0.0.1:${settings.serverPort}`);
+    return [...new Set(urls)]; // Remove duplicates
+  }
+
+  // Check if a URL should be monitored
+  function shouldMonitorUrl(url, settings) {
+    try {
+      const u = new URL(url);
+      
+      // Check if monitoring all localhost
+      if (settings.monitorAllLocalhost) {
+        if (u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname.endsWith('.localhost')) {
+          return true;
         }
+      }
+      
+      // Check against configured domains
+      const allDomains = [
+        ...settings.prodDomains,
+        ...settings.stageDomains,
+        ...settings.localDomains
+      ];
+      
+      for (const domain of allDomains) {
+        try {
+          const domainUrl = new URL(domain);
+          if (u.hostname === domainUrl.hostname) {
+            // Check if ports match if specified
+            if (domainUrl.port && u.port !== domainUrl.port) {
+              continue;
+            }
+            return true;
+          }
+        } catch (e) {
+          // If domain is not a valid URL, try as a hostname pattern
+          if (u.hostname.includes(domain)) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Guess log groups based on URL and settings
+  function guessLogGroups(url, settings) {
+    // Ensure settings object exists with proper defaults
+    if (!settings || typeof settings !== 'object') {
+      return [];
+    }
+    
+    // Start with configured log groups, ensuring it's an array
+    const groups = Array.isArray(settings.logGroups) ? [...settings.logGroups] : [];
+    
+    // Handle invalid or missing URLs
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+      return groups;
+    }
+    
+    try {
+      // Clean and prepare URL for parsing
+      let urlToParse = url.trim();
+      
+      // Add protocol if missing
+      if (!urlToParse.match(/^https?:\/\//i)) {
+        urlToParse = 'https://' + urlToParse;
+      }
+      
+      // Try to parse the URL
+      let u;
+      try {
+        u = new URL(urlToParse);
+      } catch (urlError) {
+        console.warn('Invalid URL provided to guessLogGroups:', url);
+        return groups;
+      }
+      
+      const host = u.hostname.toLowerCase();
+      
+      // Process production domains
+      const prodDomains = Array.isArray(settings.prodDomains) ? settings.prodDomains : [];
+      for (const domain of prodDomains) {
+        if (!domain || typeof domain !== 'string' || domain.trim() === '') continue;
+        
+        try {
+          // Try to parse domain as URL
+          let domainUrl;
+          if (domain.match(/^https?:\/\//i)) {
+            domainUrl = new URL(domain);
+          } else {
+            domainUrl = new URL('https://' + domain);
+          }
+          
+          if (host.includes(domainUrl.hostname.toLowerCase())) {
+            // Production log groups are already in settings.logGroups
+            break;
+          }
+        } catch (e) {
+          // If domain parsing fails, try simple string matching
+          try {
+            const cleanDomain = domain.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0].toLowerCase();
+            if (cleanDomain && (host.includes(cleanDomain) || cleanDomain.includes(host))) {
+              break;
+            }
+          } catch (stringError) {
+            // Skip this domain if all parsing attempts fail
+            continue;
+          }
+        }
+      }
+      
+      // Process staging domains
+      const stageDomains = Array.isArray(settings.stageDomains) ? settings.stageDomains : [];
+      for (const domain of stageDomains) {
+        if (!domain || typeof domain !== 'string' || domain.trim() === '') continue;
+        
+        try {
+          // Try to parse domain as URL
+          let domainUrl;
+          if (domain.match(/^https?:\/\//i)) {
+            domainUrl = new URL(domain);
+          } else {
+            domainUrl = new URL('https://' + domain);
+          }
+          
+          if (host.includes(domainUrl.hostname.toLowerCase())) {
+            // Add stage-specific log groups if not already included
+            const stageGroup = '/aws/elasticbeanstalk/ad-portal-stage/var/log/eb-docker/containers/eb-current-app/stdouterr.log';
+            if (!groups.includes(stageGroup)) {
+              groups.push(stageGroup);
+            }
+            break;
+          }
+        } catch (e) {
+          // If domain parsing fails, try simple string matching
+          try {
+            const cleanDomain = domain.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0].toLowerCase();
+            if (cleanDomain && (host.includes(cleanDomain) || cleanDomain.includes(host))) {
+              const stageGroup = '/aws/elasticbeanstalk/ad-portal-stage/var/log/eb-docker/containers/eb-current-app/stdouterr.log';
+              if (!groups.includes(stageGroup)) {
+                groups.push(stageGroup);
+              }
+              break;
+            }
+          } catch (stringError) {
+            // Skip this domain if all parsing attempts fail
+            continue;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error in guessLogGroups:', e, 'URL:', url);
+    }
+    
+    // Remove duplicates while preserving order
+    return [...new Set(groups)];
+  }
+
+  // Initialize settings on load
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'sync') {
+      // Reload cached settings
+      loadSettings().then(settings => {
+        notifyListeners(settings);
       });
     }
+  });
+
+  // Initial load
+  loadSettings();
+
+  return {
+    DEFAULT_SETTINGS,
+    loadSettings,
+    saveSettings,
+    getSettings,
+    getSetting,
+    updateSetting,
+    addListener,
+    removeListener,
+    getBackoffDelays,
+    getSqlExcludeTables,
+    getServerUrls,
+    shouldMonitorUrl,
+    guessLogGroups
   };
-  
-  populateDomains('prod-domains-container', settings.prodDomains);
-  populateDomains('stage-domains-container', settings.stageDomains);
-  populateDomains('local-domains-container', settings.localDomains);
-  document.getElementById('monitor-all-localhost').checked = settings.monitorAllLocalhost;
-  
-  // Advanced tab
-  document.getElementById('request-header').value = settings.requestHeader;
-  document.getElementById('backoff-delays').value = settings.backoffDelays;
-  document.getElementById('sql-exclude-tables').value = settings.sqlExcludeTables;
-  document.getElementById('enable-debug').checked = settings.enableDebug;
-  document.getElementById('enable-websocket').checked = settings.enableWebsocket;
+})();
+
+// Export for use in other scripts
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = SettingsManager;
 }
-
-// Get values from a list
-function getListValues(selector) {
-  const inputs = document.querySelectorAll(selector);
-  return Array.from(inputs)
-    .map(input => input.value.trim())
-    .filter(value => value.length > 0);
-}
-
-// Save settings
-document.getElementById('save-settings').addEventListener('click', async () => {
-  const settings = {
-    serverUrl: document.getElementById('server-url').value.trim(),
-    serverPort: parseInt(document.getElementById('server-port').value),
-    autoFetch: document.getElementById('auto-fetch').checked,
-    showSqlLogs: document.getElementById('show-sql-logs').checked,
-    awsProfile: document.getElementById('aws-profile').value.trim(),
-    awsRegion: document.getElementById('aws-region').value,
-    logGroups: getListValues('.log-group-input'),
-    timeRange: parseInt(document.getElementById('time-range').value),
-    prodDomains: getListValues('#prod-domains-container .domain-input'),
-    stageDomains: getListValues('#stage-domains-container .domain-input'),
-    localDomains: getListValues('#local-domains-container .domain-input'),
-    monitorAllLocalhost: document.getElementById('monitor-all-localhost').checked,
-    requestHeader: document.getElementById('request-header').value.trim(),
-    backoffDelays: document.getElementById('backoff-delays').value.trim(),
-    sqlExcludeTables: document.getElementById('sql-exclude-tables').value.trim(),
-    enableDebug: document.getElementById('enable-debug').checked,
-    enableWebsocket: document.getElementById('enable-websocket').checked
-  };
-  
-  try {
-    await saveSettings(settings);
-    showStatus('Settings saved successfully!');
-    
-    // Notify background script to reload settings
-    chrome.runtime.sendMessage({ type: 'RELOAD_SETTINGS' });
-  } catch (error) {
-    showStatus('Failed to save settings: ' + error.message, 'error');
-  }
-});
-
-// Reset to defaults
-document.getElementById('reset-defaults').addEventListener('click', async () => {
-  if (confirm('Are you sure you want to reset all settings to defaults?')) {
-    await saveSettings(DEFAULT_SETTINGS);
-    await populateForm();
-    showStatus('Settings reset to defaults');
-    chrome.runtime.sendMessage({ type: 'RELOAD_SETTINGS' });
-  }
-});
-
-// Export settings
-document.getElementById('export-settings').addEventListener('click', async () => {
-  const settings = await loadSettings();
-  const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'cloudwatch-logs-viewer-settings.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  showStatus('Settings exported successfully');
-});
-
-// Import settings
-document.getElementById('import-settings').addEventListener('click', () => {
-  document.getElementById('import-file').click();
-});
-
-document.getElementById('import-file').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  
-  try {
-    const text = await file.text();
-    const settings = JSON.parse(text);
-    await saveSettings(settings);
-    await populateForm();
-    showStatus('Settings imported successfully');
-    chrome.runtime.sendMessage({ type: 'RELOAD_SETTINGS' });
-  } catch (error) {
-    showStatus('Failed to import settings: ' + error.message, 'error');
-  }
-  
-  e.target.value = '';
-});
-
-// Initialize form on load
-populateForm();
