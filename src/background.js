@@ -409,11 +409,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.type === 'CHECK_SERVER_HEALTH') {
     // Check server health - background script can make HTTP requests to any origin
     SettingsManager.getSettings().then(settings => {
-      const serverUrl = settings.serverUrl || 'http://13.203.150.222:8090';
-      fetch(`${serverUrl}/health`)
-        .then(response => response.json())
-        .then(() => sendResponse({ success: true }))
-        .catch(() => sendResponse({ success: false }));
+      const serverUrls = SettingsManager.getServerUrls(settings);
+
+      // Try each server URL until one succeeds
+      (async () => {
+        for (const url of serverUrls) {
+          try {
+            const response = await fetch(`${url}/health`, {
+              method: 'GET',
+              signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined
+            });
+            if (response.ok) {
+              sendResponse({ success: true, url });
+              return;
+            }
+          } catch (error) {
+            console.log('[CWLV] Server check failed for', url, ':', error.message);
+          }
+        }
+        sendResponse({ success: false });
+      })();
     });
     return true; // Keep message channel open for async response
   }

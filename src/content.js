@@ -347,16 +347,22 @@
     // Add event listeners
     attachEventListeners();
 
-    // Try pinging local server to show status through background script
+    // Check server health via background script (avoids Mixed Content issues on HTTPS pages)
     try {
       chrome.runtime.sendMessage({ type: 'CHECK_SERVER_HEALTH' }, (response) => {
-        if (response && response.success) {
+        if (chrome.runtime.lastError) {
+          console.error('[CWLV] Health check error:', chrome.runtime.lastError);
+          updateStatus('Server not reachable');
+        } else if (response && response.success) {
           updateStatus('Ready');
         } else {
           updateStatus('Server not reachable');
         }
       });
-    } catch (_) {}
+    } catch (e) {
+      console.error('[CWLV] Health check exception:', e);
+      updateStatus('Server not reachable');
+    }
 
     // Sync any already captured requests for this tab
     try {
